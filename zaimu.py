@@ -37,17 +37,22 @@ for fact in model_xbrl.facts:
         management_analysis = fact.value
     elif fact.concept.qname.localName == "InformationAboutEmployeesTextBlock":
         information_about_employees = fact.value
+    elif fact.concept.qname.localName == "ConstructionCompleted":
+        construction_completed = fact.value
 
 print("会社名：" + company_name)
 print("売上高：" + netsales)
 print("従業員数：" + number_of_employees)
 print("一人当売上高：" + str(float(netsales) / float(number_of_employees)))
+print("完成工事高：" + construction_completed)
+
+
 #print("経営政策：" + business_policy)
 #print("経営リスク：" + risks)
 #print("経営分析：" + management_analysis)
 #print("従業員情報：" + information_about_employees)
 
-
+'''
 # 言語処理部分
 import os
 import google.generativeai as genai
@@ -160,3 +165,4 @@ chat_session = model.start_chat(
 response_employee_information = chat_session.send_message(employee_information)
 
 print(response_employee_information.text)
+'''
