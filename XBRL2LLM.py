@@ -8,24 +8,24 @@ import re
 config = configparser.ConfigParser()
 config.read('keys.ini')
 
-# XBRLファイルのパスを取得
-xbrl_files = {}
-for year in range(2015, 2025):  # 2015年から2024年まで
-    key = f'XBRL_FILE_{year}'
-    if key in config['FILE_PATH']:
-        xbrl_files[year] = config['FILE_PATH'][key]
+# 処理する年のリストを作成
+years = list(range(2015, 2025))  # 2015年から2024年まで
+years.reverse() # 降順にソート
 
-# 各年のデータを保持する辞書  リストではなく辞書に変更
+# 全ての年の結果を格納するリスト
+all_results = []
+
+# 各年のデータを保持する辞書
 yearly_data = {}
 for year in range(2015, 2025):
     yearly_data[year] = {  # 年をキーとして使用する
-    '売上高': 0, '売上原価': 0, '販売費及び一般管理費': 0, '営業利益': 0, '従業員数': 0,
-    '平均年間給与': 0, '売上総利益': 0, '売上総利益率': 0, '売上高営業利益率': 0,
-    '短期借入金': 0, '長期借入金': 0, '総資産': 0, '純資産': 0, '自己資本比率': 0,
-    '流動資産': 0, '流動負債': 0, '流動比率': 0, '完成工事高': 0, '完成工事原価': 0,
-    '未成工事支出金': 0, '未成工事受入金': 0, '一人当たり売上高': 0, '一人当たり人件費': 0,
-    '役員報酬': 0, '経営方針': "", '経営環境及び対処すべき課題': "", '経営上のリスク': "", '従業員情報': ""
-}
+        '売上高': 0, '売上原価': 0, '販売費及び一般管理費': 0, '営業利益': 0, '従業員数': 0,
+        '平均年間給与': 0, '売上総利益': 0, '売上総利益率': 0, '売上高営業利益率': 0,
+        '短期借入金': 0, '長期借入金': 0, '総資産': 0, '純資産': 0, '自己資本比率': 0,
+        '流動資産': 0, '流動負債': 0, '流動比率': 0, '完成工事高': 0, '完成工事原価': 0,
+        '未成工事支出金': 0, '未成工事受入金': 0, '一人当たり売上高': 0, '一人当たり人件費': 0,
+        '役員報酬': 0, '経営方針': "", '経営環境及び対処すべき課題': "", '経営上のリスク': "", '従業員情報': ""
+    }
 
 
 def load_xbrl_file(file_path):
@@ -37,15 +37,15 @@ def load_xbrl_file(file_path):
         print(f"Error loading {file_path}: {e}")
         return None
 
-# 各XBRLファイルを処理
-for year, xbrl_file in xbrl_files.items():  # 年をキーとして使用する
+# ループ処理
+for year in years:
+    xbrl_file = config['FILE_PATH'][f'XBRL_FILE_{year}']
     model_xbrl = load_xbrl_file(xbrl_file)
     if model_xbrl is None:
         continue
 
     data = yearly_data[year]  # 年をキーとしてデータを取得
-    # XBRLデータの抽出
-    processed_contexts = set() # 処理済みのコンテキストを格納するセット
+    processed_contexts = set()
 
     for fact in model_xbrl.facts:
         key = fact.concept.qname.localName  # 要素IDの取得
@@ -347,3 +347,25 @@ response = chat_session.send_message(f"[財務状況]{formatted_data}\n[財務�
 print(f"\n\n[[総合分析]]\n\n {response.text}")
 
 #'''
+
+'''
+# 各年の結果を辞書として保存
+year_result = {
+    "year": year,
+    "data": data,
+    "financial_analysis": response_data, # Geminiからの財務分析結果
+    "business_policy": response_business_policy, # Geminiからの経営基本方針結果
+    "risk_analysis": response_risks, # Geminiからのリスク分析結果
+    "management_analysis": response_management_analysis, # Geminiからの経営環境分析結果
+    "employee_information": response_employee_information # Geminiからの従業員情報結果
+    }
+all_results.append(year_result)
+
+# 全ての年の処理が完了したら、all_results を使用して統合処理を行う
+combined_financial_data = {}
+for result in all_results:
+    for key, value in result['data'].items():
+        combined_financial_data[key] = combined_financial_data.get(key, 0) + value
+
+print("全ての年の財務データを統合しました:", combined_financial_data)
+'''
