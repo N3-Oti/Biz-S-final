@@ -45,19 +45,22 @@ for year, xbrl_file in xbrl_files.items():  # 年をキーとして使用する
 
     data = yearly_data[year]  # 年をキーとしてデータを取得
     # XBRLデータの抽出
+    processed_contexts = set() # 処理済みのコンテキストを格納するセット
+
     for fact in model_xbrl.facts:
         key = fact.concept.qname.localName  # 要素IDの取得
-        if key == "NetSalesSummaryOfBusinessResults" and "CurrentYearDuration" in fact.context.id:
+        if key == "NetSalesSummaryOfBusinessResults" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
             data['売上高'] += int(fact.value) if fact.value else 0
-        elif key == "CostOfSales" and "CurrentYearDuration" in fact.context.id:
+        elif key == "CostOfSales" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
             data['売上原価'] += int(fact.value) if fact.value else 0
         elif key == "SellingGeneralAndAdministrativeExpenses" and "CurrentYearDuration" in fact.context.id:
             data['販売費及び一般管理費'] += int(fact.value) if fact.value else 0
-        elif key == "OperatingIncome" and "CurrentYearDuration" in fact.context.id:
+        elif key == "OperatingIncome" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
             data['営業利益'] += int(fact.value) if fact.value else 0
-        elif key == "NumberOfEmployees" and "CurrentYearInstant" in fact.context.id:
+        elif key == "NumberOfEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
             data['従業員数'] += int(fact.value) if fact.value else 0
-        elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and "CurrentYearInstant" in fact.context.id:
+            processed_contexts.add(fact.context.id) # context.id を集合に追加
+        elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
             data['平均年間給与'] += int(fact.value) if fact.value else 0
         elif key == "ShortTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
             data['短期借入金'] += int(fact.value) if fact.value else 0
@@ -141,10 +144,10 @@ if data['流動負債'] > 0:
     data['流動比率'] = data['流動資産'] / data['流動負債']
 
 # 結果の出力
-#print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
+print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
 
 
-#'''
+'''
 
 # 言語処理部分
 import os
@@ -191,7 +194,7 @@ formatted_data = {
 
 # Create the model
 generation_config = {
-  "temperature": 0.5,
+  "temperature": 0.2,
   "top_p": 0.95,
   "top_k": 40,
   "max_output_tokens": 8192,
@@ -343,4 +346,4 @@ response = chat_session.send_message(f"[財務状況]{formatted_data}\n[財務�
 
 print(f"\n\n[[総合分析]]\n\n {response.text}")
 
-#'''
+'''
