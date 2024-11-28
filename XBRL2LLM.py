@@ -60,7 +60,7 @@ for year, xbrl_file in xbrl_files.items():  # 年をキーとして使用する
         elif key == "NumberOfEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
             data['従業員数'] += int(fact.value) if fact.value else 0
             processed_contexts.add(fact.context.id) # context.id を集合に追加
-        elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
+        elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and fact.context.id == "CurrentYearInstant_NonConsolidatedMember" in fact.context.id:
             data['平均年間給与'] += int(fact.value) if fact.value else 0
         elif key == "ShortTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
             data['短期借入金'] += int(fact.value) if fact.value else 0
@@ -144,10 +144,10 @@ if data['流動負債'] > 0:
     data['流動比率'] = data['流動資産'] / data['流動負債']
 
 # 結果の出力
-print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
+#print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
 
 
-'''
+#'''
 
 # 言語処理部分
 import os
@@ -346,4 +346,4 @@ response = chat_session.send_message(f"[財務状況]{formatted_data}\n[財務�
 
 print(f"\n\n[[総合分析]]\n\n {response.text}")
 
-'''
+#'''
