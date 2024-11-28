@@ -8,6 +8,18 @@ import re
 config = configparser.ConfigParser()
 config.read('keys.ini')
 
+yearly_data = {
+    2024: {  # 年をキーとして使用する
+        '売上高': 0, '売上原価': 0, '販売費及び一般管理費': 0, '営業利益': 0, '従業員数': 0,
+        '平均年間給与': 0, '売上総利益': 0, '売上総利益率': 0, '売上高営業利益率': 0,
+        '短期借入金': 0, '長期借入金': 0, '総資産': 0, '純資産': 0, '自己資本比率': 0,
+        '流動資産': 0, '流動負債': 0, '流動比率': 0, '完成工事高': 0, '完成工事原価': 0,
+        '未成工事支出金': 0, '未成工事受入金': 0, '一人当たり売上高': 0, '一人当たり人件費': 0,
+        '役員報酬': 0, '経営方針': "", '経営環境及び対処すべき課題': "", '経営上のリスク': "", '従業員情報': ""
+    }
+}
+
+"""
 # 処理する年のリストを作成
 years = list(range(2015, 2025))  # 2015年から2024年まで
 years.reverse() # 降順にソート
@@ -26,7 +38,7 @@ for year in range(2015, 2025):
         '未成工事支出金': 0, '未成工事受入金': 0, '一人当たり売上高': 0, '一人当たり人件費': 0,
         '役員報酬': 0, '経営方針': "", '経営環境及び対処すべき課題': "", '経営上のリスク': "", '従業員情報': ""
     }
-
+"""
 
 def load_xbrl_file(file_path):
     ctrl = Cntlr.Cntlr(logFileName='logToPrint')
@@ -34,70 +46,81 @@ def load_xbrl_file(file_path):
         model_xbrl = ctrl.modelManager.load(file_path)
         return model_xbrl
     except Exception as e:
-        print(f"Error loading {file_path}: {e}")
+        print(f"ファイルの読み込みに失敗しました。: {file_path}: {e}")
         return None
 
+#"""  
+# 2024年のみ
+year = 2024
+xbrl_file = config['FILE_PATH'][f'XBRL_FILE_{year}']
+model_xbrl = load_xbrl_file(xbrl_file)
+if model_xbrl is None:
+    exit()
+#"""
+
+"""
 # ループ処理
 for year in years:
     xbrl_file = config['FILE_PATH'][f'XBRL_FILE_{year}']
     model_xbrl = load_xbrl_file(xbrl_file)
     if model_xbrl is None:
         continue
+"""
 
-    data = yearly_data[year]  # 年をキーとしてデータを取得
-    processed_contexts = set()
+data = yearly_data[year]  # 年をキーとしてデータを取得
+processed_contexts = set()
 
-    for fact in model_xbrl.facts:
-        key = fact.concept.qname.localName  # 要素IDの取得
-        if key == "NetSalesSummaryOfBusinessResults" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
-            data['売上高'] += int(fact.value) if fact.value else 0
-        elif key == "CostOfSales" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
-            data['売上原価'] += int(fact.value) if fact.value else 0
-        elif key == "SellingGeneralAndAdministrativeExpenses" and "CurrentYearDuration" in fact.context.id:
-            data['販売費及び一般管理費'] += int(fact.value) if fact.value else 0
-        elif key == "OperatingIncome" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
-            data['営業利益'] += int(fact.value) if fact.value else 0
-        elif key == "NumberOfEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
-            data['従業員数'] += int(fact.value) if fact.value else 0
-            processed_contexts.add(fact.context.id) # context.id を集合に追加
-        elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and fact.context.id == "CurrentYearInstant_NonConsolidatedMember" in fact.context.id:
-            data['平均年間給与'] += int(fact.value) if fact.value else 0
-        elif key == "ShortTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
-            data['短期借入金'] += int(fact.value) if fact.value else 0
-        elif key == "LongTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
-            data['長期借入金'] += int(fact.value) if fact.value else 0
-        elif key == "TotalAssetsSummaryOfBusinessResults" and "CurrentYearInstant" in fact.context.id:
-            data['総資産'] += int(fact.value) if fact.value else 0
-        elif key == "NetAssetsSummaryOfBusinessResults" and "CurrentYearInstant" in fact.context.id:
-            data['純資産'] += int(fact.value) if fact.value else 0
-        elif key == "CurrentAssets" and "CurrentYearInstant" in fact.context.id:
-            data['流動資産'] += int(fact.value) if fact.value else 0
-        elif key == "CurrentLiabilities" and "CurrentYearInstant" in fact.context.id:
-            data['流動負債'] += int(fact.value) if fact.value else 0
-        elif key == "NetSalesOfCompletedConstructionContractsCNS" and "CurrentYearDuration" in fact.context.id:
-            data['完成工事高'] += int(fact.value) if fact.value else 0
-        elif key == "CostOfSalesOfCompletedConstructionContractsCNS" and "CurrentYearDuration" in fact.context.id:
-            data['完成工事原価'] += int(fact.value) if fact.value else 0
-        elif key == "CostsOnUncompletedConstructionContractsCNS" and "CurrentYearInstant" in fact.context.id:
-            data['未成工事支出金'] += int(fact.value) if fact.value else 0
-        elif key == "AdvancesReceivedOnUncompletedConstructionContractsCNS" and "CurrentYearInstant" in fact.context.id:
-            data['未成工事受入金'] += int(fact.value) if fact.value else 0
-        elif key == "DirectorsCompensationsSGA" and "CurrentYearDuration" in fact.context.id:
-            data['役員報酬'] += int(fact.value) if fact.value else 0
+for fact in model_xbrl.facts:
+    key = fact.concept.qname.localName  # 要素IDの取得
+    if key == "NetSalesSummaryOfBusinessResults" and fact.context.id == "CurrentYearDuration_NonConsolidatedMember":
+        data['売上高'] += int(fact.value) if fact.value else 0
+    elif key == "CostOfSales" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
+        data['売上原価'] += int(fact.value) if fact.value else 0
+    elif key == "SellingGeneralAndAdministrativeExpenses" and "CurrentYearDuration" in fact.context.id:
+        data['販売費及び一般管理費'] += int(fact.value) if fact.value else 0
+    elif key == "OperatingIncome" and "CurrentYearDuration_NonConsolidatedMember" in fact.context.id:
+        data['営業利益'] += int(fact.value) if fact.value else 0
+    elif key == "NumberOfEmployees" and fact.context.id == "CurrentYearInstant" and fact.context.id not in processed_contexts:
+        data['従業員数'] += int(fact.value) if fact.value else 0
+        processed_contexts.add(fact.context.id) # context.id を集合に追加
+    elif key == "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees" and fact.context.id == "CurrentYearInstant_NonConsolidatedMember" in fact.context.id:
+        data['平均年間給与'] += int(fact.value) if fact.value else 0
+    elif key == "ShortTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
+        data['短期借入金'] += int(fact.value) if fact.value else 0
+    elif key == "LongTermLoansPayable" and "CurrentYearInstant" in fact.context.id:
+        data['長期借入金'] += int(fact.value) if fact.value else 0
+    elif key == "TotalAssetsSummaryOfBusinessResults" and "CurrentYearInstant" in fact.context.id:
+        data['総資産'] += int(fact.value) if fact.value else 0
+    elif key == "NetAssetsSummaryOfBusinessResults" and "CurrentYearInstant" in fact.context.id:
+        data['純資産'] += int(fact.value) if fact.value else 0
+    elif key == "CurrentAssets" and "CurrentYearInstant" in fact.context.id:
+        data['流動資産'] += int(fact.value) if fact.value else 0
+    elif key == "CurrentLiabilities" and "CurrentYearInstant" in fact.context.id:
+        data['流動負債'] += int(fact.value) if fact.value else 0
+    elif key == "NetSalesOfCompletedConstructionContractsCNS" and "CurrentYearDuration" in fact.context.id:
+        data['完成工事高'] += int(fact.value) if fact.value else 0
+    elif key == "CostOfSalesOfCompletedConstructionContractsCNS" and "CurrentYearDuration" in fact.context.id:
+        data['完成工事原価'] += int(fact.value) if fact.value else 0
+    elif key == "CostsOnUncompletedConstructionContractsCNS" and "CurrentYearInstant" in fact.context.id:
+        data['未成工事支出金'] += int(fact.value) if fact.value else 0
+    elif key == "AdvancesReceivedOnUncompletedConstructionContractsCNS" and "CurrentYearInstant" in fact.context.id:
+        data['未成工事受入金'] += int(fact.value) if fact.value else 0
+    elif key == "DirectorsCompensationsSGA" and "CurrentYearDuration" in fact.context.id:
+        data['役員報酬'] += int(fact.value) if fact.value else 0
     # テキスト部
 #'''    
-        elif fact.concept.qname.localName == "BusinessPolicyBusinessEnvironmentIssuesToAddressEtcTextBlock":
-            data['経営方針'] = fact.value if fact.value else ""
-            business_policy = fact.value
-        elif fact.concept.qname.localName == "BusinessRisksTextBlock":
-            data['経営上のリスク'] = fact.value if fact.value else ""
-            business_risks = fact.value
-        elif fact.concept.qname.localName == "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock":
-            data['経営分析'] = fact.value if fact.value else ""  
-            management_analysis = fact.value
-        elif fact.concept.qname.localName == "InformationAboutEmployeesTextBlock":
-            data['従業員情報'] = fact.value if fact.value else ""
-            employee_information = fact.value
+    elif fact.concept.qname.localName == "BusinessPolicyBusinessEnvironmentIssuesToAddressEtcTextBlock":
+        data['経営方針'] = fact.value if fact.value else ""
+        business_policy = fact.value
+    elif fact.concept.qname.localName == "BusinessRisksTextBlock":
+        data['経営上のリスク'] = fact.value if fact.value else ""
+        business_risks = fact.value
+    elif fact.concept.qname.localName == "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock":
+        data['経営分析'] = fact.value if fact.value else ""  
+        management_analysis = fact.value
+    elif fact.concept.qname.localName == "InformationAboutEmployeesTextBlock":
+        data['従業員情報'] = fact.value if fact.value else ""
+        employee_information = fact.value
 #'''
 '''
         elif key == "BusinessPolicy" and "CurrentYearInstant" in fact.context.id:
@@ -144,7 +167,7 @@ if data['流動負債'] > 0:
     data['流動比率'] = data['流動資産'] / data['流動負債']
 
 # 結果の出力
-#print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
+print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
 
 
 #'''
@@ -204,7 +227,7 @@ generation_config = {
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash",
   generation_config=generation_config,
-  system_instruction="与えられた財務データに基づき、企業のその年の財務状況を分析し、整理し、改善点を指摘します。",
+  system_instruction="与えられた財務データを一覧化した後、与えられた財務データに基づき、企業のその年の財務状況を分析し、整理し、改善点を指摘します。",
 )
 
 chat_session = model.start_chat(
@@ -332,7 +355,8 @@ generation_config = {
 }
 
 model = genai.GenerativeModel(
-  model_name="gemini-1.5-pro",
+#  model_name="gemini-1.5-pro",
+  model_name="gemini-1.5-flash",
   generation_config=generation_config,
   system_instruction="与えられた情報に基づき、企業の現状を評価し、具体的な改善提案を生成します。\n\n財務状況\n\n[財務諸表の数値データをここに記載]\n\n財務分析\n\n[財務諸表の分析結果を記載]\n\n経営方針分析\n\n[企業の経営方針に関する分析結果を記載]\n\nリスク分析\n\n[企業が直面する潜在的なリスクの分析結果を記載]\n\n経営環境分析\n\n[市場環境や競合状況などの分析結果を記載]\n\n従業員情報\n\n[従業員の構成やモチベーションに関する情報を記載]\n\nSteps\n\n情報の整理と理解: 提供された各情報を精査し、企業の現状を把握します。\n\n現状評価: 財務状況、経営方針、リスク、経営環境、従業員情報を総合的に評価し、強みと弱みを特定します。\n\n問題点の抽出: 現状評価に基づき、企業が直面する主要な問題点を抽出します。\n\n改善提案の策定: 問題点に対する具体的な改善提案を策定します。改善提案は、実現可能性と効果を考慮し、優先順位を付けて提示します。\n\n総合的な経営判断: 改善提案を踏まえ、企業の将来に向けた総合的な経営判断を行います。\n\nOutput Format\n\n改善提案と経営判断を記述形式で出力します。提案内容は具体的かつ実行可能である必要があり、各提案にはその根拠となる分析結果を簡潔に付記します。\n\nExamples\n\n例1\n\n入力:\n\n財務状況\n\n売上高: [前年比90%]、営業利益: [前年比70%]\n\n財務分析\n\n流動比率が低く、短期的な資金繰りに問題がある可能性が示唆されています。\n\n経営方針分析\n\n新規事業への投資を積極的に行っていますが、具体的な計画が不明瞭です。\n\nリスク分析\n\n市場の縮小傾向により、売上減少のリスクがあります。\n\n経営環境分析\n\n競合他社が低価格戦略を採用しており、価格競争が激化しています。\n\n従業員情報\n\n従業員のモチベーションは平均的です。\n\n出力:\n短期的な資金繰りの改善が急務です。具体的には、在庫管理の徹底と売掛金の回収サイクルの短縮を提案します（財務分析より）。新規事業投資については、計画の具体化とリスク評価を早急に行い、投資判断の透明性を高める必要があります（経営方針分析より）。市場の縮小と価格競争の激化に対応するため、コスト削減と差別化戦略の策定が求められます（リスク分析、経営環境分析より）。従業員のモチベーション向上のため、インセンティブ制度の見直しを検討してください（従業員情報より）。\n\nNotes\n\n改善提案は具体的かつ実行可能であることを重視します。\n\n経営判断は、企業の持続的な成長を支援する視点で行います。",
 )
