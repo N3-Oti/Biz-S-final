@@ -8,9 +8,9 @@ import re
 config = configparser.ConfigParser()
 config.read('keys.ini')
 
-# XBRLファイルのパスを取得 (複数年対応)
+# XBRLファイルのパスを取得
 xbrl_files = {}
-for year in range(2015, 2025):  # 2014年から2024年まで
+for year in range(2015, 2025):  # 2015年から2024年まで
     key = f'XBRL_FILE_{year}'
     if key in config['FILE_PATH']:
         xbrl_files[year] = config['FILE_PATH'][key]
@@ -47,7 +47,7 @@ for year, xbrl_file in xbrl_files.items():  # 年をキーとして使用する
     # XBRLデータの抽出
     for fact in model_xbrl.facts:
         key = fact.concept.qname.localName  # 要素IDの取得
-        if key == "NetSales" and "CurrentYearDuration" in fact.context.id:
+        if key == "NetSalesSummaryOfBusinessResults" and "CurrentYearDuration" in fact.context.id:
             data['売上高'] += int(fact.value) if fact.value else 0
         elif key == "CostOfSales" and "CurrentYearDuration" in fact.context.id:
             data['売上原価'] += int(fact.value) if fact.value else 0
@@ -82,16 +82,21 @@ for year, xbrl_file in xbrl_files.items():  # 年をキーとして使用する
         elif key == "DirectorsCompensationsSGA" and "CurrentYearDuration" in fact.context.id:
             data['役員報酬'] += int(fact.value) if fact.value else 0
     # テキスト部
+#'''    
         elif fact.concept.qname.localName == "BusinessPolicyBusinessEnvironmentIssuesToAddressEtcTextBlock":
             data['経営方針'] = fact.value if fact.value else ""
+            business_policy = fact.value
         elif fact.concept.qname.localName == "BusinessRisksTextBlock":
             data['経営上のリスク'] = fact.value if fact.value else ""
+            business_risks = fact.value
         elif fact.concept.qname.localName == "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock":
             data['経営分析'] = fact.value if fact.value else ""  
+            management_analysis = fact.value
         elif fact.concept.qname.localName == "InformationAboutEmployeesTextBlock":
             data['従業員情報'] = fact.value if fact.value else ""
-
-    '''
+            employee_information = fact.value
+#'''
+'''
         elif key == "BusinessPolicy" and "CurrentYearInstant" in fact.context.id:
             print(fact.value)
             # BeautifulSoupを使ってHTMLタグを除去
@@ -135,11 +140,11 @@ if data['総資産'] > 0:
 if data['流動負債'] > 0:
     data['流動比率'] = data['流動資産'] / data['流動負債']
 
-    # 結果の出力
-print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
+# 結果の出力
+#print(f"{year}年 ({xbrl_file}) の分析結果: {data}")
 
 
-'''
+#'''
 
 # 言語処理部分
 import os
@@ -150,7 +155,7 @@ GEMINI_API_KEY = config['API']['GEMINI_API_KEY']
 # APIキーを設定
 genai.configure(api_key=GEMINI_API_KEY)
 
-## 各種数値分析
+## 財務分析
 
 # 既存のdata辞書をpartsキーを持つ形式に変換
 formatted_data = {
@@ -196,13 +201,7 @@ generation_config = {
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash",
   generation_config=generation_config,
-  system_instruction="与えられた財務データに基づき、企業のその年の財務状況を分析し、整理し、改善点を指摘します。\n\n# 手順\n\n1. データの整理：与えられたデータを項目ごとに整理します。\n2. 財務状況の分析：整理されたデータを基に、収益性、安全性、効率性などの観点から財務状況を分析します。\n3. 改善点の指摘：分析結果に基づき、具体的な改善点を指摘します。\n\n# 出力フォーマット\n\n分析結果を以下の形式で出力します。\n\n
-\n## 財務分析\n\n[財務状況の分析結果を記述]\n\n## 改善点\n\n* [改善点1]\n* [改善点2]\n* [改善点3] \n...\n
-\n\n# 例\n\n## 入力データ\n\n
-\n売上高: 100000000\n売上原価: 60000000\n販売費及び一般管理費: 20000000\n営業利益: 20000000\n従業員数: 100\n平均年間給与: 6000000\n短期借入金: 5000000\n長期借入金: 20000000\n総資産: 150000000\n純資産: 100000000\n流動資産: 80000000\n流動負債: 30000000\n完成工事高: 0\n完成工事原価: 0\n未成工事支出金: 0\n未成工事受入金: 0\n役員報酬: 5000000\n
-\n\n## 出力\n\n
-\n## 財務分析\n\n売上高は1億円であり、売上原価と販売費及び一般管理費を差し引いた営業利益は2000万円です。営業利益率は20%であり、良好な収益性を維持しています。従業員一人当たりの平均年間給与は600万円で、平均的な水準です。短期および長期借入金の合計は2500万円であり、総資産1億5000万円に対して低い比率です。流動資産は8000万円で、流動負債3000万円を大きく上回っており、短期的な支払い能力に問題はありません。完成工事関連のデータは全て0であり、建設業ではない可能性があります。役員報酬は500万円で、売上高に対する比率は低く、適切な水準です。\n\n## 改善点\n\n* 営業利益率が高い水準を維持しているため、さらなる事業拡大のための投資を検討することが望ましいです。\n* 短期借入金と長期借入金の比率が低く、財務レバレッジを活用することで、さらなる収益向上が期待できます。\n* 完成工事関連のデータが全て0であるため、業種に特化した財務指標を追加することで、より詳細な分析が可能になります。\n
-\n",
+  system_instruction="与えられた財務データに基づき、企業のその年の財務状況を分析し、整理し、改善点を指摘します。",
 )
 
 chat_session = model.start_chat(
@@ -212,7 +211,7 @@ chat_session = model.start_chat(
 
 response_data = chat_session.send_message(formatted_data)
 
-print(response_data.text)
+print(f"\n\n[[財務分析]]\n\n {response_data.text}")
 
 ## 経営基本方針
 
@@ -236,9 +235,9 @@ chat_session = model.start_chat(
   ]
 )
 
-response_business_policy = chat_session.send_message(BusinessPolicy_cleaned)
+response_business_policy = chat_session.send_message(business_policy)
 
-print(response_business_policy.text)
+print(f"\n\n[[経営基本方針]]\n\n {response_business_policy.text}")
 
 # リスク分析
 
@@ -262,11 +261,11 @@ chat_session = model.start_chat(
   ]
 )
 
-response_risks = chat_session.send_message(BusinessRisksTextBlock_cleaned)
+response_risks = chat_session.send_message(business_risks)
 
-print(response_risks.text)
+print(f"\n\n[[リスク分析]]\n\n {response_risks.text}")
 
-# 経営分析
+# 経営環境分析
 
 # Create the model
 generation_config = {
@@ -290,7 +289,7 @@ chat_session = model.start_chat(
 
 response_management_analysis = chat_session.send_message(management_analysis)   
 
-print(response_management_analysis.text)
+print(f"\n\n[[経営環境分析]]\n\n {response_management_analysis.text}")
 
 # 従業員情報
 
@@ -316,5 +315,32 @@ chat_session = model.start_chat(
 
 response_employee_information = chat_session.send_message(employee_information)
 
-print(response_employee_information.text)
-'''
+print(f"\n\n[[従業員情報]]\n\n {response_employee_information.text}")
+
+# 総合分析
+
+# Create the model
+generation_config = {
+  "temperature": 1,
+  "top_p": 0.95,
+  "top_k": 40,
+  "max_output_tokens": 8192,
+  "response_mime_type": "text/plain",
+}
+
+model = genai.GenerativeModel(
+  model_name="gemini-1.5-pro",
+  generation_config=generation_config,
+  system_instruction="与えられた情報に基づき、企業の現状を評価し、具体的な改善提案を生成します。\n\n財務状況\n\n[財務諸表の数値データをここに記載]\n\n財務分析\n\n[財務諸表の分析結果を記載]\n\n経営方針分析\n\n[企業の経営方針に関する分析結果を記載]\n\nリスク分析\n\n[企業が直面する潜在的なリスクの分析結果を記載]\n\n経営環境分析\n\n[市場環境や競合状況などの分析結果を記載]\n\n従業員情報\n\n[従業員の構成やモチベーションに関する情報を記載]\n\nSteps\n\n情報の整理と理解: 提供された各情報を精査し、企業の現状を把握します。\n\n現状評価: 財務状況、経営方針、リスク、経営環境、従業員情報を総合的に評価し、強みと弱みを特定します。\n\n問題点の抽出: 現状評価に基づき、企業が直面する主要な問題点を抽出します。\n\n改善提案の策定: 問題点に対する具体的な改善提案を策定します。改善提案は、実現可能性と効果を考慮し、優先順位を付けて提示します。\n\n総合的な経営判断: 改善提案を踏まえ、企業の将来に向けた総合的な経営判断を行います。\n\nOutput Format\n\n改善提案と経営判断を記述形式で出力します。提案内容は具体的かつ実行可能である必要があり、各提案にはその根拠となる分析結果を簡潔に付記します。\n\nExamples\n\n例1\n\n入力:\n\n財務状況\n\n売上高: [前年比90%]、営業利益: [前年比70%]\n\n財務分析\n\n流動比率が低く、短期的な資金繰りに問題がある可能性が示唆されています。\n\n経営方針分析\n\n新規事業への投資を積極的に行っていますが、具体的な計画が不明瞭です。\n\nリスク分析\n\n市場の縮小傾向により、売上減少のリスクがあります。\n\n経営環境分析\n\n競合他社が低価格戦略を採用しており、価格競争が激化しています。\n\n従業員情報\n\n従業員のモチベーションは平均的です。\n\n出力:\n短期的な資金繰りの改善が急務です。具体的には、在庫管理の徹底と売掛金の回収サイクルの短縮を提案します（財務分析より）。新規事業投資については、計画の具体化とリスク評価を早急に行い、投資判断の透明性を高める必要があります（経営方針分析より）。市場の縮小と価格競争の激化に対応するため、コスト削減と差別化戦略の策定が求められます（リスク分析、経営環境分析より）。従業員のモチベーション向上のため、インセンティブ制度の見直しを検討してください（従業員情報より）。\n\nNotes\n\n改善提案は具体的かつ実行可能であることを重視します。\n\n経営判断は、企業の持続的な成長を支援する視点で行います。",
+)
+
+chat_session = model.start_chat(
+  history=[
+  ]
+)
+
+response = chat_session.send_message(f"[財務状況]{formatted_data}\n[財務分析]{response_data}\n[経営基本方針]{response_business_policy}\n[リスク分析]{response_risks}\n[経営環境分析]{response_management_analysis}\n[従業員情報]{response_employee_information}")
+
+print(f"\n\n[[総合分析]]\n\n {response.text}")
+
+#'''
